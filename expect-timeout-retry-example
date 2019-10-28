@@ -57,7 +57,7 @@ EOF
     ##########################################
     if [ $? = 124 ]
     then
-        RETRY=$(expr $RETRY + 1)
+        RETRY=$(expr ${RETRY} + 1)
         STATUS_CODE=408
         STATUS_REASON="TIMEOUT"
         rm ${TMPFILE}
@@ -74,7 +74,7 @@ EOF
             STATUS_CODE=200
             STATUS_REASON="${RESULT}"
         else
-            RETRY=$(expr $RETRY + 1)
+            RETRY=$(expr ${RETRY} + 1)
             STATUS_CODE=404
             STATUS_REASON="COMMAND FAILED"
         fi
@@ -85,7 +85,7 @@ EOF
     ##########################################
     if [ ${RETRY} = 4 ] && [ ! -z ${STATUS_CODE} ]
     then
-        echo $STATUS_CODE";"$STATUS_REASON
+        echo ${STATUS_CODE}";"${STATUS_REASON}
     fi;
     
 done
