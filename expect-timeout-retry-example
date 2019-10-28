@@ -1,0 +1,91 @@
+#!/bin/bash
+
+# TIMEOUT AND RETRY BY DOUGLAS LIRA - Douglas Lira <douglas.augustolira@altran.com>
+# HOW TO TEST:
+#
+# CHANGE VARIABLES
+# - TIMEOUT
+# - SLEEP
+#
+# 1 - EXAMPLE
+#
+# TIMEOUT=1
+# SLEEP=2
+#
+# RESULT: 408;TIMEOUT
+#
+# CHANGE VARIABLES
+# - TIMEOUT
+# - SLEEP
+#
+# 2 - EXAMPLE
+#
+# TIMEOUT=2
+# SLEEP=1
+#
+# RESULT: 200;123
+
+
+RETRY=1;
+RESULT="";
+TIMEOUT=2;
+SLEEP=1;
+STATUS_CODE="";
+STATUS_REASON="";
+TMPFILE="result.out"
+
+##########################################
+# MAIN                                   #
+##########################################
+
+until [ ${RETRY} -eq 4 ]; do
+
+if [ -f "${TMPFILE}" ]
+then
+    rm ${TMPFILE}
+fi
+
+$(timeout ${TIMEOUT} /usr/bin/expect << EOF > ${TMPFILE}
+    sleep ${SLEEP}
+    send -- "echo serialnumber = 123\r"
+    expect "serialnumber = 123"
+EOF
+);  
+    
+    ##########################################
+    # CHECK TIMEOUT                          #
+    ##########################################
+    if [ $? = 124 ]
+    then
+        RETRY=$(expr $RETRY + 1)
+        STATUS_CODE=408
+        STATUS_REASON="TIMEOUT"
+        rm ${TMPFILE}
+    else
+
+        ######################################
+        # CHECK EXIST FILE AND OUTPUT RESULT #
+        ######################################
+        if [ -f "${TMPFILE}" ]
+        then
+            RETRY=4
+            RESULT=`cat ${TMPFILE} | grep "serialnumber =" | tr -d " " | tr -d '\r'  | awk -F"=" '{ print$2 }'`
+            rm ${TMPFILE}
+            STATUS_CODE=200
+            STATUS_REASON="${RESULT}"
+        else
+            RETRY=$(expr $RETRY + 1)
+            STATUS_CODE=404
+            STATUS_REASON="COMMAND FAILED"
+        fi
+    fi
+
+    ##########################################
+    # CHECK RETRY AND RESULT                 #
+    ##########################################
+    if [ ${RETRY} = 4 ] && [ ! -z ${STATUS_CODE} ]
+    then
+        echo $STATUS_CODE";"$STATUS_REASON
+    fi;
+    
+done
